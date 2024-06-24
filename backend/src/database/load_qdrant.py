@@ -1,12 +1,12 @@
-from src.crawler import ImportedFileCrawler
 from pathlib import Path
-from src.encoder import ClipModel
+from encoder import ClipModel
+from src.crawler import ImportedFileCrawler
 from qdrant_client import QdrantClient
-from src.database import Qdrant
+from database import Qdrant
 from qdrant_client.models import Distance, VectorParams
 
 
-data_path = Path(__file__).parent / "../data/products.json"
+data_path = Path(__file__).parent / "../../data/products.json"
 products_crawler = ImportedFileCrawler(data_path)
 products_crawler.obtain_data()
 

@@ -12,5 +12,13 @@ class VectorDatabase(ABC):
     def set(self, product: dict):
         raise NotImplemented
     
-    def get(self, text: str) -> int:
+    def get(self, text: str):
+        raise NotImplemented
+    
+class TextDatabase(ABC):
+
+    def set(self, product: dict):
+        raise NotImplemented
+    
+    def get(self, text: str):
         raise NotImplemented

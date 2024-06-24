@@ -8,14 +8,14 @@ services:
     volumes:
       - ./backend/data/qdrant_data:/qdrant/storage
   
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
-    environment:
-      - discovery.type=single-node
+  meilisearch:
+    image: getmeili/meilisearch:latest
     ports:
-      - "9200:9200"
+      - '7700:7700'
+    environment:
+      MEILI_MASTER_KEY: 'simple_password'
     volumes:
-      - ./backend/data/elasticsearch:/usr/share/elasticsearch/data
+      - ./backend/data/meili:/meili_data
 
   backend-server:
     image: mori:latest

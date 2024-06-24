@@ -5,10 +5,9 @@ compose:
 	docker-compose up
 
 load_elastic:
-	python ./backend/load_elasticsearch.py
-
+	python ./backend/src/database/load_meilisearch.py
 load_qdrant:
-	python ./backend/load_qdrant.py
+	python ./backend/src/database/load_qdrant.py
 
 build-image:
 	docker build -t mori:latest .

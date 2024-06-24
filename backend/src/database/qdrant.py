@@ -4,6 +4,7 @@ from database.abstract import VectorDatabase
 from qdrant_client import QdrantClient, models
 import PIL
 import uuid
+from qdrant_client.http.models import Filter, FieldCondition, MatchValue
 
 class Qdrant(VectorDatabase):
 
@@ -34,15 +35,61 @@ class Qdrant(VectorDatabase):
             )
 
     def get(self, text: str, search_params:dict):
-        filters = search_params.get("filter", {})
+        filters = self._get_filter(search_params)
         query_vector = self.encoder.encode_text(text)
         search_result = self.client.search(
             collection_name = self.collection_name,
             query_vector = query_vector,
-            limit = search_params["limit"],
+            limit = search_params["top"],
             with_payload = True,
             query_filter = filters
         )
         return search_result
+    
+    def _get_filter(self, params:dict):
+
+        search_params = {}
+        filters = []
+
+        if params['region']:
+            filters.append(
+                FieldCondition(
+                    key="region",
+                    match=MatchValue(value=params['region'])
+                )
+            )
+        if params['price_min'] is not None and params['price_max'] is not None:
+            filters.append(
+                FieldCondition(
+                    key="current_price",
+                    range={"gte": params['price_min'], "lte": params['price_max']}
+                )
+            )
+        elif params['price_min'] is not None:
+            filters.append(
+                FieldCondition(
+                    key="current_price",
+                    range={"gte": params['price_min']}
+                )
+            )
+        elif params['price_max'] is not None:
+            filters.append(
+                FieldCondition(
+                    key="current_price",
+                    range={"lte": params['price_max']}
+                )
+            )
+        if params['category']:
+            filters.append(
+                FieldCondition(
+                    key="category_name",
+                    match=MatchValue(value=params['category'])
+                )
+            )
+
+        if filters:
+            return Filter(must=filters)
+        else:
+            return {}
 
 

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Search</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        input[type="text"],
+        select {
+            padding: 8px;
+            margin: 5px;
+            width: 200px;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #results {
+            margin-top: 20px;
+        }
+
+        .product {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .product img {
+            max-width: 100px;
+            max-height: 100px;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Product Search</h2>
+    <form id="searchForm">
+        <input type="text" id="searchText" placeholder="Enter search term...">
+        <input type="text" id="priceMax" placeholder="Enter price max...">
+        <input type="text" id="priceMin" placeholder="Enter price min...">
+        <input type="text" id="region" placeholder="Enter region...">
+        <input type="text" id="category" placeholder="Enter category name...">
+        <button type="submit">Search</button>
+    </form>
+    <div id="results"></div>
+    <script>
+        document.getElementById('searchForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var searchText = document.getElementById('searchText').value;
+            var priceMax = document.getElementById('priceMax').value;
+            var priceMin = document.getElementById('priceMin').value;
+            var region = document.getElementById('region').value;
+            var category = document.getElementById('category').value;
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', 'http://127.0.0.1:5001/search/?text=' + searchText + '&price_max=' + priceMax + '&price_min=' + priceMin + '&region=' + region + '&category=' + category, true);
+            xhr.onload = function () {
+                if (this.status == 200) {
+                    var products = JSON.parse(this.responseText);
+                    var output = '';
+                    console.log(products);
+                    for (var i in products) {
+                        output += '<div class="product">';
+                        output += '<img src="' + products[i].payload.images[0] + '">';
+                        output += '<h3>' + products[i].payload.name + '</h3>';
+                        output += '<p>Price: ' + products[i].payload.current_price + '</p>';
+                        output += '<p>Region: ' + products[i].payload.region + '</p>';
+                        output += '<p>Category: ' + products[i].payload.category_name + '</p>';
+                        output += '</div>';
+                    }
+                    document.getElementById('results').innerHTML = output;
+                }
+            }
+            xhr.send();
+            // console.log(searchText, priceMax, priceMin, region);
+        });
+    </script>
+</body>
+
+</html>

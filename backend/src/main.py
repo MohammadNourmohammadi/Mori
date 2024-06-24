@@ -1,16 +1,19 @@
 from typing import Union, Optional, List
 from fastapi import FastAPI, HTTPException, Query, Depends
-from crawler import ImportedFileCrawler
-from pathlib import Path
 from encoder import ClipModel
 from qdrant_client import QdrantClient
-from qdrant_client.http.models import Filter, FieldCondition, MatchValue
 from database import Qdrant
 from pydantic import BaseModel
 import os
+from meilisearch import Client
+from database import Meilisearch
+from starlette.responses import FileResponse
 
 
 app = FastAPI()
+
+text_top_search = os.environ.get('TEXT_SEARCH', 5)
+image_top_search = os.environ.get('IMAGE_SEARCH', 6)
 
 clip_model = ClipModel()
 
@@ -20,10 +23,15 @@ qdrant_port = os.environ.get('QDRANT_PORT', '6333')
 qdrant_instance = QdrantClient(qdrant_host, port=qdrant_port)
 qdrant = Qdrant(qdrant_instance, clip_model, "Mori")
 
+meili_host = os.environ.get('MEILI_HOST', 'http://localhost')
+meili_port = os.environ.get('MEILI_PORT', '7700')
+
+meili_instance = Client(f'{meili_host}:{meili_port}', 'simple_password')
+meili_db = Meilisearch(meili_instance, "mori")
+
 
 class SearchRequest(BaseModel):
     text: str 
-    top: int 
     region: Optional[str] = None
     price_min: Optional[float] = None
     price_max: Optional[float] = None
@@ -36,69 +44,20 @@ class SearchResponse(BaseModel):
 
 def parse_search_request(
     text: str = Query(...),
-    top: int = Query(...),
     region: Optional[str] = Query(None),
     price_min: Optional[float] = Query(None),
     price_max: Optional[float] = Query(None),
     category: Optional[str] = Query(None)
 ) -> SearchRequest:
-    return SearchRequest(text=text, top=top, region=region, price_min=price_min,
+    return SearchRequest(text=text, region=region, price_min=price_min,
         price_max=price_max,
         category=category)
 
 
-@app.get("/")
-def read_root():
-    return {"image": "salam"}
-
-
-@app.get("/search/image/", )
-def image_search(request: SearchRequest = Depends(parse_search_request)):
+def image_search(top:int, request: SearchRequest):
     # try:
-        search_params = {
-            "limit": request.top
-        }
-        filters = []
-
-        if request.region:
-            filters.append(
-                FieldCondition(
-                    key="region",
-                    match=MatchValue(value=request.region)
-                )
-            )
-        if request.price_min is not None and request.price_max is not None:
-            filters.append(
-                FieldCondition(
-                    key="current_price",
-                    range={"gte": request.price_min, "lte": request.price_max}
-                )
-            )
-        elif request.price_min is not None:
-            filters.append(
-                FieldCondition(
-                    key="current_price",
-                    range={"gte": request.price_min}
-                )
-            )
-        elif request.price_max is not None:
-            filters.append(
-                FieldCondition(
-                    key="current_price",
-                    range={"lte": request.price_max}
-                )
-            )
-        if request.category:
-            filters.append(
-                FieldCondition(
-                    key="category",
-                    match=MatchValue(value=request.category)
-                )
-            )
-
-        if filters:
-            search_params["filter"] = Filter(must=filters)
-
+        search_params = vars(request)
+        search_params["top"] = top
         search_result = qdrant.get(text=request.text, search_params=search_params)
         response = [
             SearchResponse(id=point.id, payload=point.payload)
@@ -107,6 +66,29 @@ def image_search(request: SearchRequest = Depends(parse_search_request)):
         return response
     # except Exception as e:
     #     raise HTTPException(status_code=500, detail=str(e))
+
+
+def text_search(top:int, request: SearchRequest):
+    params = vars(request).copy()
+    params["top"] = top
+    search_result = meili_db.get(text=request.text, params=params)
+    response = [
+        SearchResponse(id=str(point['id']), payload=point)
+        for point in search_result["hits"]
+    ]
+    return response
+
+@app.get("/search")
+async def search(request: SearchRequest = Depends(parse_search_request)):
+    image_response = image_search(image_top_search, request)
+    text_response = text_search(text_top_search, request)
+    image_response.extend(text_response)
+    return image_response
+   
+templates_path = os.environ.get("TEMPLATES_PATH", './backend/src/templates/index.html')
+@app.get("/")
+async def read_index():
+    return FileResponse(templates_path)
 
 if __name__ == "__main__":
     import uvicorn
