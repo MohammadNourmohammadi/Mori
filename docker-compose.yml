@@ -21,8 +21,8 @@ services:
     image: mori:latest
     env_file:
     - .env
-    expose:
-    - "5001"
+    ports:
+    - "5003:5003"
     depends_on:
     - qdrant
     - elasticsearch

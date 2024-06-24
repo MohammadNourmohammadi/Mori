@@ -12,8 +12,8 @@ from starlette.responses import FileResponse
 
 app = FastAPI()
 
-text_top_search = os.environ.get('TEXT_SEARCH', 5)
-image_top_search = os.environ.get('IMAGE_SEARCH', 6)
+text_top_search = int(os.environ.get('TEXT_SEARCH', 5))
+image_top_search = int(os.environ.get('IMAGE_SEARCH', 6))
 
 clip_model = ClipModel()
 
@@ -92,4 +92,4 @@ async def read_index():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5001)
+    uvicorn.run(app, host="0.0.0.0", port=5003)

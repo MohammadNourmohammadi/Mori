@@ -70,7 +70,7 @@
             var region = document.getElementById('region').value;
             var category = document.getElementById('category').value;
             var xhr = new XMLHttpRequest();
-            xhr.open('GET', 'http://backend-server:5001/search/?text=' + searchText + '&price_max=' + priceMax + '&price_min=' + priceMin + '&region=' + region + '&category=' + category, true);
+            xhr.open('GET', 'http://localhost:5003/search/?text=' + searchText + '&price_max=' + priceMax + '&price_min=' + priceMin + '&region=' + region + '&category=' + category, true);
             xhr.onload = function () {
                 if (this.status == 200) {
                     var products = JSON.parse(this.responseText);
